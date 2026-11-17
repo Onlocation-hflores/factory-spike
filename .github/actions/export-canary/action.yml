@@ -1,0 +1,15 @@
+# Mimics credential-exporting setup actions (e.g. configure-aws-credentials): secret in via `with:`, out via $GITHUB_ENV.
+name: export-canary
+inputs:
+  value:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        V: ${{ inputs.value }}
+      run: |
+        echo "CANARY_A=$V" >> "$GITHUB_ENV"
+        printf '%s' "$V" > /tmp/canary_c.txt
+        printf '%s' "$V" > "$HOME/canary_c.txt"
