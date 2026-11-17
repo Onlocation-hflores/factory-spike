@@ -1,0 +1,49 @@
+# SPIKE-02: Actions primitives. Runs in a public scratch repo with synthetic content only.
+# Q1 effects-only re-run can download attempt-1 artifacts and read needs outputs
+# Q2 environment approval on re-run   Q3 vars/needs in runs-on   Q4 GITHUB_TOKEN push does not start CI
+name: primitives
+on: workflow_dispatch
+permissions: {}
+jobs:
+  produce:
+    runs-on: ${{ vars.SPIKE_RUNNER }}            # Q3: vars in runs-on
+    outputs:
+      sha: ${{ steps.p.outputs.sha }}
+      runner: ubuntu-24.04
+    steps:
+      - id: p
+        run: |
+          mkdir out && date +%s%N > out/patch.txt
+          echo "sha=$(sha256sum out/patch.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: produce-${{ github.run_attempt }}
+          path: out/
+  effects:
+    needs: produce
+    runs-on: ${{ needs.produce.outputs.runner }}  # Q3: needs in runs-on
+    environment: spike-env                         # Q2: required reviewer
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: produce-*
+          path: in
+      - name: Q1 report
+        env:
+          WANT: ${{ needs.produce.outputs.sha }}
+        run: |
+          echo "attempt=$GITHUB_RUN_ATTEMPT needs.sha=$WANT"
+          find in -type f -print -exec sha256sum {} \;
+          sha256sum in/*/patch.txt | grep -q "$WANT" && echo "Q1: hash match" || { echo "Q1: NO MATCH"; exit 1; }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: repo
+      - name: Q4 push with GITHUB_TOKEN
+        working-directory: repo
+        run: |
+          git config user.name spike && git config user.email spike@invalid
+          git checkout -b "factory/gt-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          date > marker.txt && git add marker.txt && git commit -qm "Q4 marker"
+          git push origin HEAD

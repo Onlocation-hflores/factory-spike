@@ -1,0 +1,11 @@
+# SPIKE-02 Q4 observer: if this runs for a factory/gt-* branch, a GITHUB_TOKEN push started CI.
+name: ci
+on:
+  push:
+    branches: ['factory/**']
+permissions: {}
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "CI started for $GITHUB_REF by $GITHUB_ACTOR"
