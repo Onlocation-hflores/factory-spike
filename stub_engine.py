@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import time
 import urllib.request
@@ -26,6 +27,8 @@ for p in ["/tmp/canary_c.txt", os.path.expanduser("~/canary_c.txt")]:
 print("ENV NAMES visible:", len(os.environ))
 
 pathlib.Path("spike-change.txt").write_text(f"stub edit {time.time_ns()}\n")
+subprocess.run(["git", "add", "spike-change.txt"], check=True)
+subprocess.run(["git", "-c", "user.name=stub", "-c", "user.email=stub@invalid", "commit", "-qm", "stub edit"], check=True)
 
 cfg_path = pathlib.Path(os.environ["RUNNER_TEMP"]) / "gh-aw/mcp-config/mcp-servers.json"
 cfg = json.loads(cfg_path.read_text())["mcpServers"]
@@ -49,3 +52,4 @@ rpc("notifications/initialized", {}, None)
 out = rpc("tools/call", {"name": "create_pull_request", "arguments": {
     "title": "spike: duplicate test", "body": "stub engine, no model", "branch": "factory/ghaw-dup"}}, 2)
 print("create_pull_request ->", out[:500])
+print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "num_turns": 1, "result": "stub done"}))
