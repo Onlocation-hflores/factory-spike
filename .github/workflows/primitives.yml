@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "attempt=$GITHUB_RUN_ATTEMPT needs.sha=$WANT"
           find in -type f -print -exec sha256sum {} \;
-          sha256sum in/*/patch.txt | grep -q "$WANT" && echo "Q1: hash match" || { echo "Q1: NO MATCH"; exit 1; }
+          find in -name patch.txt -exec sha256sum {} + | grep -q "$WANT" && echo "Q1: hash match" || { echo "Q1: NO MATCH"; exit 1; }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: repo
